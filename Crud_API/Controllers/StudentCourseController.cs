@@ -4,6 +4,7 @@ using Crud_API.Infrastructure.Database.Repositories;
 using Crud_API.Interfaces.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
 
 namespace Crud_API.Controllers
 {
@@ -71,12 +72,27 @@ namespace Crud_API.Controllers
             _logger.LogInformation($"{DateTime.Now}: Course {studentCourse.Id} updated to the database.");
         }
 
-        [HttpDelete]
+        [HttpDelete, Route("{:id}")]
         public async Task<IActionResult> Delete(long studentCourseId)
         {
             var result = await _studentCourseRepository.GetAsync(studentCourseId);
             return await _studentCourseRepository.Remove(result);
 
+        }
+
+        [HttpGet, Route("filter/{filter}")]
+        public async Task<GenericResult<StudentCourse>> GetListAsync(Expression<Func<StudentCourse, bool>> filter = null)
+        {
+            var studentCourse = await _studentCourseRepository.GetListAsync(filter);
+
+            return GenericResult<StudentCourse>.Succeed(studentCourse);
+        }
+
+        [HttpGet, Route("order/{orderby}")]
+        public async Task<GenericResult<StudentCourse>> GetSortedAsync(Expression<Func<StudentCourse, object>> orderBy, bool ascending)
+        {
+            var studentsCourse = await _studentCourseRepository.GetSortedAsync(orderBy, ascending);
+            return GenericResult<StudentCourse>.Succeed(studentsCourse);
         }
     }
 }

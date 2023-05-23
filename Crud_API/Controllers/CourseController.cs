@@ -1,10 +1,12 @@
-﻿using Crud_API.DomainModels.Base;
+﻿using Crud_API.DomainModels;
+using Crud_API.DomainModels.Base;
 using Crud_API.Infrastructure.Database.Models;
 using Crud_API.Infrastructure.Database.Repositories;
 using Crud_API.Interfaces.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 
 namespace Crud_API.Controllers
@@ -73,12 +75,26 @@ namespace Crud_API.Controllers
             _logger.LogInformation($"{DateTime.Now}: Course {course.CourseName} updated to the database.");
         }
 
-        [HttpDelete]
+        [HttpDelete, Route("{:id}")]
         public async Task<IActionResult> Delete(long courseId) 
         {
             var result = await _courseRepository.GetAsync(courseId);
             return await _courseRepository.Remove(result);
+        }
 
+        [HttpGet, Route("filter/{filter}")]
+        public async Task<GenericResult<Course>> GetListAsync(Expression<Func<Course, bool>> filter = null)
+        {
+            var courses = await _courseRepository.GetListAsync(filter);
+
+            return GenericResult<Course>.Succeed(courses);
+        }
+
+        [HttpGet, Route("order/{orderby}")]
+        public async Task<GenericResult<Course>> GetSortedAsync(Expression<Func<Course, object>> orderBy, bool ascending)
+        {
+            var students = await _courseRepository.GetSortedAsync(orderBy, ascending);
+            return GenericResult<Course>.Succeed(students);
         }
     }
 }
