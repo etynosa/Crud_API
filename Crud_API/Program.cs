@@ -22,16 +22,24 @@ builder.Services.AddDbContext<CrudDbcontext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DatabaseConnectionString"));
 });
 
+builder.Services.AddHttpClient("RandomUser", client =>
+{
+    // Configure HttpClient options
+    client.BaseAddress = new Uri("https://randomuser.me/api/");
+});
+
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// builder.Services.AddAutoMapper(typeof(CrudDbcontext));
 
 // Repositories
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IStudentCourseRepository, StudentCourseRepository>();
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 

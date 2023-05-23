@@ -1,4 +1,6 @@
-﻿using Crud_API.Infrastructure.Database.Models;
+﻿using Crud_API.DomainModels.Base;
+using Crud_API.DomainModels.Enums;
+using Crud_API.Infrastructure.Database.Models;
 using Crud_API.Interfaces.Repositories;
 
 namespace Crud_API.Infrastructure.Database.Repositories

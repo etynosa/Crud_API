@@ -1,6 +1,8 @@
-﻿using Crud_API.Infrastructure.Database.Models;
+﻿using Crud_API.DomainModels.Base;
+using Crud_API.Infrastructure.Database.Models;
 using Crud_API.Interfaces.Data;
 using Crud_API.Interfaces.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -15,6 +17,11 @@ namespace Crud_API.Infrastructure.Database.Repositories
             dbContext = databaseContext;
         }
 
+        public async Task<List<TEntity>> GetAllAsync()
+        {
+            IQueryable<TEntity> query = dbContext.Set<TEntity>();
+            return await query.ToListAsync();
+        }
         public async Task<TEntity> GetAsync(long Id)
         {
             return await dbContext.Set<TEntity>().Where(x => x.Id == Id).FirstOrDefaultAsync();
@@ -50,24 +57,17 @@ namespace Crud_API.Infrastructure.Database.Repositories
             return await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
         }
 
-        public void Add(TEntity entity)
+        public async Task<TEntity> Add(TEntity entity)
         {
             PrepareEntityForAdd(entity);
 
             dbContext.Set<TEntity>().Add(entity);
+
+            await dbContext.SaveChangesAsync();
+            return entity;
         }
 
-        public void AddRange(IEnumerable<TEntity> entities)
-        {
-            foreach (var entity in entities)
-            {
-                PrepareEntityForAdd(entity);
-            }
-
-            dbContext.Set<TEntity>().AddRange(entities);
-        }
-
-        public void Update(TEntity entity, bool updateState = false)
+        public async Task<TEntity> Update(TEntity entity, bool updateState = false)
         {
             if (entity is IEntityEditTrackable)
             {
@@ -78,9 +78,11 @@ namespace Crud_API.Infrastructure.Database.Repositories
             {
                 dbContext.Entry<TEntity>(entity).State = EntityState.Modified;
             }
+            await dbContext.SaveChangesAsync();
+            return entity;
         }
 
-        public void Remove(TEntity entity)
+        public async Task<IActionResult> Remove(TEntity entity)
         {
             if (entity is IDeleteTrackable)
             {
@@ -91,22 +93,8 @@ namespace Crud_API.Infrastructure.Database.Repositories
             {
                 dbContext.Set<TEntity>().Remove(entity);
             }
-        }
-
-        public void RemoveRange(IEnumerable<TEntity> entities)
-        {
-            if (entities.FirstOrDefault() is IDeleteTrackable)
-            {
-                foreach (var entity in entities)
-                {
-                    (entity as IDeleteTrackable).IsDeleted = true;
-                    Update(entity);
-                }
-            }
-            else
-            {
-                dbContext.Set<TEntity>().RemoveRange(entities);
-            }
+            await dbContext.SaveChangesAsync();
+            return null;
         }
 
         private void PrepareEntityForAdd(TEntity entity)
