@@ -4,6 +4,7 @@ using Crud_API.Infrastructure.Database.Repositories;
 using Crud_API.Interfaces.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Crud_API.Controllers
@@ -30,7 +31,7 @@ namespace Crud_API.Controllers
 
         }
 
-        [HttpGet, Route("{:id}")]
+        [HttpGet, Route("id")]
         public async Task<GenericResult<StudentCourse>> GetCourseByIdAsync(long id)
         {
             var result = await _studentCourseRepository.GetAsync(id);
@@ -38,61 +39,102 @@ namespace Crud_API.Controllers
             {
                 return GenericResult<StudentCourse>.NotFound;
             }
-            return GenericResult<StudentCourse>.Succeed(result);
+            else
+            {
+                return GenericResult<StudentCourse>.Succeed(result);
+            }
+
         }
 
         [HttpPost, Route("create")]
-        public async Task<GenericResult<StudentCourse>> AddStudentCourseAsync([FromBody]StudentCourse studentCourse)
+        public async Task<GenericResult<bool>> AddStudentCourseAsync([FromBody]StudentCourse studentCourse)
         {
             var result = await _studentCourseRepository.Add(studentCourse);
             if (result == null)
             {
-                return GenericResult<StudentCourse>.BadRequest;
+                return GenericResult<bool>.BadRequest;
+            }
+            else
+            {
+                return GenericResult<bool>.CreatedWithMessage("Entity Created Successfully");
+                _logger.LogInformation($"{DateTime.Now}: Course {studentCourse.Id} added to the database.");
             }
 
-            return GenericResult<StudentCourse>.CreatedWithMessage("Entity Created Successfully");
-            _logger.LogInformation($"{DateTime.Now}: Course {studentCourse.Id} added to the database.");
         }
 
-        [HttpPut, Route("Create")]
-        public async Task<GenericResult<StudentCourse>> UpdateStudentCourseAsync(long studentCourseId)
+        [HttpPut, Route("update")]
+        public async Task<GenericResult<StudentCourse>> UpdateStudentCourseAsync(StudentCourse studentCourse)
         {
-            var result = await _studentCourseRepository.GetAsync(studentCourseId);
+            var result = await _studentCourseRepository.GetAsync(studentCourse.Id);
             if (result == null)
             {
                 return GenericResult<StudentCourse>.NotFound;
             }
-            var studentCourse = await _studentCourseRepository.Update(result);
-            if (studentCourse == null)
+            else
             {
-                return GenericResult<StudentCourse>.BadRequest;
+                var updatedStudentCourse = await _studentCourseRepository.Update(result);
+                return GenericResult<StudentCourse>.SucceedWithMessage("Entity Updated Successfully");
+                _logger.LogInformation($"{DateTime.Now}: Course {studentCourse.Id} updated to the database.");
             }
 
-            return GenericResult<StudentCourse>.SucceedWithMessage("Entity Updated Successfully");
-            _logger.LogInformation($"{DateTime.Now}: Course {studentCourse.Id} updated to the database.");
         }
 
-        [HttpDelete, Route("{:id}")]
-        public async Task<IActionResult> Delete(long studentCourseId)
+        [HttpDelete, Route("delete/id")]
+        public async Task<GenericResult<bool>> Delete(long studentCourseId)
         {
             var result = await _studentCourseRepository.GetAsync(studentCourseId);
-            return await _studentCourseRepository.Remove(result);
+            if (result == null)
+            {
+                return GenericResult<bool>.NotFound;
+            }
+            else
+            {
+                await _studentCourseRepository.Remove(result);
+                return GenericResult<bool>.SucceedWithMessage("Entity deleted successfully");
+            }
+        }
+
+        [HttpGet, Route("filter")]
+        public async Task<GenericResult<IEnumerable<StudentCourse>>> GetListAsync([FromQuery] string filter = null)
+        {
+            try
+            {
+                var studentcourses = await _studentCourseRepository.GetListAsync(s => s.Course.CourseName == filter);
+                return GenericResult<IEnumerable<StudentCourse>>.Succeed(studentcourses);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<IEnumerable<StudentCourse>>.Fail(ex.Message);
+            }
+        }
+
+        [HttpGet, Route("order")]
+        public async Task<GenericResult<IEnumerable<StudentCourse>>> GetSortedAsync([FromQuery] string orderBy, bool ascending)
+        {
+            try
+            {
+                var studentcourses = await _studentCourseRepository.GetSortedAsync(s => EF.Property<object>(s, orderBy), ascending);
+                return GenericResult<IEnumerable<StudentCourse>>.Succeed(studentcourses);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<IEnumerable<StudentCourse>>.Fail(ex.Message);
+            }
 
         }
 
-        [HttpGet, Route("filter/{filter}")]
-        public async Task<GenericResult<StudentCourse>> GetListAsync(Expression<Func<StudentCourse, bool>> filter = null)
+        [HttpGet("page")]
+        public async Task<GenericResult<IEnumerable<StudentCourse>>> GetPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var studentCourse = await _studentCourseRepository.GetListAsync(filter);
-
-            return GenericResult<StudentCourse>.Succeed(studentCourse);
-        }
-
-        [HttpGet, Route("order/{orderby}")]
-        public async Task<GenericResult<StudentCourse>> GetSortedAsync(Expression<Func<StudentCourse, object>> orderBy, bool ascending)
-        {
-            var studentsCourse = await _studentCourseRepository.GetSortedAsync(orderBy, ascending);
-            return GenericResult<StudentCourse>.Succeed(studentsCourse);
+            try
+            {
+                var studentcourses = await _studentCourseRepository.GetPagedAsync(pageNumber, pageSize);
+                return GenericResult<IEnumerable<StudentCourse>>.Succeed(studentcourses);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<IEnumerable<StudentCourse>>.Fail(ex.Message);
+            }
         }
     }
 }

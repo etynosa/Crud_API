@@ -1,4 +1,5 @@
 ﻿using Crud_API.Infrastructure.Database.Models;
+using Crud_API.Infrastructure.Database.Repositories.NewFolder;
 using Microsoft.EntityFrameworkCore;
 
 namespace Crud_API.Infrastructure.Database
@@ -11,6 +12,13 @@ namespace Crud_API.Infrastructure.Database
 
         public CrudDbcontext(DbContextOptions<CrudDbcontext> options) : base(options)
         {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.ApplyConfiguration(new CourseConfiguration());
+            modelBuilder.ApplyConfiguration(new StudentConfiguration());
+            modelBuilder.ApplyConfiguration(new StudentCourseConfiguration());
         }
 
 

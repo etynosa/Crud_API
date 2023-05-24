@@ -4,7 +4,9 @@ using Crud_API.Infrastructure.Database.Models;
 using Crud_API.Infrastructure.Database.Repositories;
 using Crud_API.Interfaces.Repositories;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Crud_API.Controllers
@@ -29,7 +31,7 @@ namespace Crud_API.Controllers
             
         }
 
-        [HttpGet, Route("{:id}")]
+        [HttpGet, Route("/id")]
         public async Task<GenericResult<Student>> GetCourseByIdAsync(long id)
         {
             var result = await _studentRepository.GetAsync(id);
@@ -37,7 +39,10 @@ namespace Crud_API.Controllers
             {
                 return GenericResult<Student>.NotFound;
             }
-            return GenericResult<Student>.Succeed(result);
+            else
+            {
+                return GenericResult<Student>.Succeed(result);
+            }
         }
 
         [HttpPost, Route("create")]
@@ -48,51 +53,85 @@ namespace Crud_API.Controllers
             {
                 return GenericResult<Student>.BadRequest;
             }
-
-            return GenericResult<Student>.CreatedWithMessage("Entity Created Successfully");
-            _logger.LogInformation($"{DateTime.Now}: Course {student.FirstName} added to the database.");
+            else
+            {
+                return GenericResult<Student>.CreatedWithMessage("Entity Created Successfully");
+                _logger.LogInformation($"{DateTime.Now}: Course {student.FirstName} added to the database.");
+            }
         }
 
-        [HttpPut, Route("update/{:id}")]
-        public async Task<GenericResult<Student>> UpdateStudentAsync(long studentId)
+        [HttpPut, Route("update")]
+        public async Task<GenericResult<Student>> UpdateStudentAsync(Student student)
+        {
+            var getStudent = await _studentRepository.GetAsync(student.Id);
+            if (getStudent == null)
+            {
+                return GenericResult<Student>.NotFound;
+            }
+            else
+            {
+                var result = await _studentRepository.Update(student);
+                return GenericResult<Student>.SucceedWithMessage("Entity Updated Successfully");
+                _logger.LogInformation($"{DateTime.Now}: Course {student.FirstName} added to the database.");
+            }
+        }
+
+        [HttpDelete, Route("delete")]
+        public async Task<GenericResult<bool>> Delete(long studentId)
         {
             var result = await _studentRepository.GetAsync(studentId);
             if (result == null)
             {
-                return GenericResult<Student>.NotFound;
+                return GenericResult<bool>.NotFound;
             }
-
-            var student = await _studentRepository.Update(result);
-            if (student == null)
+            else
             {
-                return GenericResult<Student>.BadRequest;
+                await _studentRepository.Remove(result);
+                return GenericResult<bool>.SucceedWithMessage("Entity deleted successfully");
             }
-
-            return GenericResult<Student>.SucceedWithMessage("Entity Updated Successfully");
-            _logger.LogInformation($"{DateTime.Now}: Course {student.FirstName} added to the database.");
         }
 
-        [HttpDelete, Route("{:id}")]
-        public async Task<IActionResult> Delete(long studentId)
+        [HttpGet, Route("filter")]
+        public async Task<GenericResult<IEnumerable<Student>>> GetListAsync([FromQuery] string filter = null)
         {
-            var result = await _studentRepository.GetAsync(studentId);
-            return await _studentRepository.Remove(result);
-
+            try
+            {
+                var students = await _studentRepository.GetListAsync(s => s.Class == filter);
+                return GenericResult<IEnumerable<Student>>.Succeed(students);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<IEnumerable<Student>>.Fail(ex.Message);
+            }
         }
 
-        [HttpGet, Route("filter/{filter}")]
-        public async Task<GenericResult<Student>> GetListAsync(Expression<Func<Student, bool>> filter = null)
+        [HttpGet, Route("order")]
+        public async Task<GenericResult<IEnumerable<Student>>> GetSortedAsync([FromQuery] string orderBy, bool ascending)
         {
-            var students = await _studentRepository.GetListAsync(filter);
-
-            return GenericResult<Student>.Succeed(students);
+            try
+            {
+                var students = await _studentRepository.GetSortedAsync(s => EF.Property<object>(s, orderBy), ascending);
+                return GenericResult<IEnumerable<Student>>.Succeed(students);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<IEnumerable<Student>>.Fail(ex.Message);
+            }
+          
         }
 
-        [HttpGet, Route("order/{orderby}")]
-        public async Task<GenericResult<Student>> GetSortedAsync(Expression<Func<Student, object>> orderBy, bool ascending)
+        [HttpGet("page")]
+        public async Task<GenericResult<IEnumerable<Student>>> GetPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var students = await _studentRepository.GetSortedAsync(orderBy, ascending);
-            return GenericResult<Student>.Succeed(students);
+            try
+            {
+                var students = await _studentRepository.GetPagedAsync(pageNumber, pageSize);
+                return GenericResult<IEnumerable<Student>>.Succeed(students);
+            }
+            catch (Exception ex)
+            {
+                return GenericResult<IEnumerable<Student>>.Fail(ex.Message);
+            }
         }
     }
 }

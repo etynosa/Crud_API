@@ -38,6 +38,22 @@ namespace Crud_API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Courses");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 3L,
+                            CourseCode = "CSC101",
+                            CourseName = "Introduction to Computer Science",
+                            CourseTitle = "CS101"
+                        },
+                        new
+                        {
+                            Id = 4L,
+                            CourseCode = "MAT201",
+                            CourseName = "Linear Algebra",
+                            CourseTitle = "LA201"
+                        });
                 });
 
             modelBuilder.Entity("Crud_API.Infrastructure.Database.Models.Student", b =>
@@ -64,6 +80,24 @@ namespace Crud_API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Students");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 3L,
+                            Class = "10A",
+                            DateOfBirth = new DateTime(2005, 10, 15, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            FirstName = "John",
+                            LastName = "Doe"
+                        },
+                        new
+                        {
+                            Id = 4L,
+                            Class = "11B",
+                            DateOfBirth = new DateTime(2004, 9, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            FirstName = "Jane",
+                            LastName = "Smith"
+                        });
                 });
 
             modelBuilder.Entity("Crud_API.Infrastructure.Database.Models.StudentCourse", b =>
@@ -80,7 +114,44 @@ namespace Crud_API.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("StudentId");
+
                     b.ToTable("StudentCourses");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 3L,
+                            CourseId = 3L,
+                            StudentId = 3L
+                        },
+                        new
+                        {
+                            Id = 4L,
+                            CourseId = 4L,
+                            StudentId = 4L
+                        });
+                });
+
+            modelBuilder.Entity("Crud_API.Infrastructure.Database.Models.StudentCourse", b =>
+                {
+                    b.HasOne("Crud_API.Infrastructure.Database.Models.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Crud_API.Infrastructure.Database.Models.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Student");
                 });
 #pragma warning restore 612, 618
         }
