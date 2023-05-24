@@ -8,7 +8,6 @@ namespace Crud_API.Infrastructure.Database.Models
         public string CourseName { get; set; }
         public string CourseCode { get; set; }
         public string CourseTitle { get; set; }
-        public virtual ICollection<StudentCourse> StudentCourses { get; set; }
     }
 
 }

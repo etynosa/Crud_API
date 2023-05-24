@@ -9,6 +9,5 @@ namespace Crud_API.Infrastructure.Database.Models
         public string LastName { get; set; }
         public string Class { get; set; }
         public DateTime DateOfBirth { get; set; }
-        public virtual ICollection<StudentCourse> StudentCourses { get; set; }
     }
 }
